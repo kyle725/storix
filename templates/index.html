@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storix — Supply Inventory</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal:    #0B7B6B;
+  --teal-lt: #E6F5F2;
+  --teal-md: #C2E8E1;
+  --teal-dk: #084F45;
+  --amber:   #D97706;
+  --amber-lt:#FEF3C7;
+  --red:     #DC2626;
+  --red-lt:  #FEE2E2;
+  --green:   #16A34A;
+  --green-lt:#DCFCE7;
+  --gray-50: #F8FAFB;
+  --gray-100:#F0F4F5;
+  --gray-200:#E2EAEC;
+  --gray-300:#C8D6DA;
+  --gray-400:#94A8AD;
+  --gray-500:#5F7A81;
+  --gray-700:#2C4A52;
+  --gray-900:#111E21;
+  --font-head: 'DM Serif Display', serif;
+  --font-body: 'DM Sans', sans-serif;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--gray-50);
+  color: var(--gray-900);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── FLASH MESSAGES ── */
+.flash-container {
+  position: fixed;
+  top: 72px;
+  right: 20px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 340px;
+}
+
+.flash {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: var(--shadow-md);
+  animation: slideIn 0.25s ease;
+}
+
+.flash.success { background: var(--green-lt); color: #166534; border: 1px solid #86efac; }
+.flash.error   { background: var(--red-lt);   color: #991B1B; border: 1px solid #fca5a5; }
+
+.flash-close {
+  cursor: pointer;
+  opacity: 0.6;
+  font-size: 16px;
+  background: none;
+  border: none;
+  color: inherit;
+  line-height: 1;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── NAV ── */
+nav {
+  background: #fff;
+  border-bottom: 1px solid var(--gray-200);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  height: 60px;
+  gap: 32px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-logo {
+  font-family: var(--font-head);
+  font-size: 20px;
+  color: var(--teal-dk);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  letter-spacing: -0.3px;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  width: 30px; height: 30px;
+  background: var(--teal);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.logo-cross { position: relative; width: 14px; height: 14px; }
+.logo-cross::before {
+  content: ''; position: absolute;
+  background: #fff; width: 4px; height: 14px;
+  left: 5px; top: 0; border-radius: 1px;
+}
+.logo-cross::after {
+  content: ''; position: absolute;
+  background: #fff; width: 14px; height: 4px;
+  left: 0; top: 5px; border-radius: 1px;
+}
+
+.nav-links { display: flex; gap: 2px; list-style: none; flex: 1; }
+
+.nav-links a {
+  display: block;
+  padding: 6px 14px;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-500);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.nav-links a:hover { background: var(--gray-100); color: var(--gray-700); }
+.nav-links a.active { background: var(--teal-lt); color: var(--teal-dk); }
+
+.nav-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+
+.nav-badge {
+  background: var(--red-lt);
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.nav-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── LAYOUT ── */
+main {
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.page-title h1 {
+  font-family: var(--font-head);
+  font-size: 28px;
+  color: var(--gray-900);
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+}
+
+.page-title p { font-size: 14px; color: var(--gray-400); margin-top: 4px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-decoration: none;
+}
+
+.btn-primary { background: var(--teal); color: #fff; }
+.btn-primary:hover { background: var(--teal-dk); transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+.btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-200); }
+.btn-outline:hover { background: var(--gray-100); border-color: var(--gray-300); }
+
+.btn-sm { padding: 6px 13px; font-size: 13px; }
+.btn-icon { width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-style: normal; font-size: 15px; }
+
+/* ── STAT CARDS ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.stat-card.teal::before  { background: var(--teal); }
+.stat-card.amber::before { background: var(--amber); }
+.stat-card.red::before   { background: var(--red); }
+.stat-card.green::before { background: var(--green); }
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--gray-400);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-family: var(--font-head);
+  font-size: 36px;
+  line-height: 1;
+  color: var(--gray-900);
+  letter-spacing: -1px;
+  margin-bottom: 6px;
+}
+
+.stat-sub { font-size: 12px; color: var(--gray-400); }
+.stat-sub strong { color: var(--gray-700); }
+
+/* ── CONTENT GRID ── */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* ── CARD ── */
+.card {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.card-title { font-size: 15px; font-weight: 600; color: var(--gray-900); }
+.card-actions { display: flex; align-items: center; gap: 8px; }
+
+/* Search */
+.search-wrap { position: relative; }
+
+.search-wrap input {
+  padding: 7px 12px 7px 34px;
+  border: 1px solid var(--gray-200);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--gray-900);
+  background: var(--gray-50);
+  width: 200px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-wrap input:focus { border-color: var(--teal); background: #fff; }
+
+.search-icon {
+  position: absolute;
+  left: 10px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--gray-400);
+  pointer-events: none;
+}
+
+/* Filter chips */
+.filter-row {
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.12s;
+}
+
+.filter-chip.active-chip { background: var(--teal); color: #fff; }
+.filter-chip:not(.active-chip) { background: var(--gray-100); color: var(--gray-500); border-color: var(--gray-200); }
+.filter-chip:not(.active-chip):hover { background: var(--gray-200); color: var(--gray-700); }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+
+thead th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--gray-400);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  background: var(--gray-50);
+  border-bottom: 1px solid var(--gray-200);
+}
+
+tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.1s; }
+tbody tr:hover { background: var(--gray-50); }
+tbody tr:last-child { border-bottom: none; }
+
+td {
+  padding: 13px 16px;
+  font-size: 13.5px;
+  color: var(--gray-700);
+  vertical-align: middle;
+}
+
+.item-name { font-weight: 500; color: var(--gray-900); display: block; }
+.item-code { font-size: 11px; color: var(--gray-400); margin-top: 1px; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.badge-green  { background: var(--green-lt); color: #166534; }
+.badge-amber  { background: var(--amber-lt); color: #92400E; }
+.badge-red    { background: var(--red-lt);   color: #991B1B; }
+.badge-teal   { background: var(--teal-lt);  color: var(--teal-dk); }
+.badge-gray   { background: var(--gray-100); color: var(--gray-500); }
+
+.progress-wrap { display: flex; align-items: center; gap: 8px; }
+
+.progress-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--gray-200);
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.progress-fill { height: 100%; border-radius: 10px; }
+.fill-green { background: var(--green); }
+.fill-amber { background: var(--amber); }
+.fill-red   { background: var(--red); }
+
+.progress-num { font-size: 12px; color: var(--gray-400); min-width: 30px; text-align: right; }
+
+.table-actions { display: flex; gap: 5px; }
+
+.icon-btn {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--gray-400);
+  transition: all 0.12s;
+}
+
+.icon-btn:hover { background: var(--gray-100); color: var(--gray-700); border-color: var(--gray-300); }
+.icon-btn.danger:hover { background: var(--red-lt); color: var(--red); border-color: #fca5a5; }
+
+/* ── SIDE PANEL ── */
+.side-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.loan-item {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.loan-item:last-child { border-bottom: none; }
+
+.loan-avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+
+.av-teal   { background: var(--teal); }
+.av-amber  { background: var(--amber); }
+.av-indigo { background: #6366F1; }
+.av-rose   { background: #E11D48; }
+.av-violet { background: #7C3AED; }
+
+.loan-info { flex: 1; min-width: 0; }
+.loan-name { font-size: 13px; font-weight: 500; color: var(--gray-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.loan-detail { font-size: 11.5px; color: var(--gray-400); margin-top: 1px; }
+
+.loan-due {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.due-ok   { background: var(--green-lt); color: #166534; }
+.due-soon { background: var(--amber-lt); color: #92400E; }
+.due-late { background: var(--red-lt);   color: #991B1B; }
+
+/* Quick actions */
+.quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 16px;
+}
+
+.qa-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  background: var(--gray-50);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+
+.qa-btn:hover {
+  background: var(--teal-lt);
+  border-color: var(--teal-md);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.qa-icon  { font-size: 22px; line-height: 1; }
+.qa-label { font-size: 11.5px; font-weight: 500; color: var(--gray-700); text-align: center; line-height: 1.3; }
+
+/* Activity */
+.activity-item {
+  padding: 12px 18px;
+  display: flex;
+  gap: 10px;
+  border-bottom: 1px solid var(--gray-100);
+  align-items: flex-start;
+}
+
+.activity-item:last-child { border-bottom: none; }
+
+.activity-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+.dot-teal  { background: var(--teal); }
+.dot-amber { background: var(--amber); }
+.dot-red   { background: var(--red); }
+.dot-green { background: var(--green); }
+
+.activity-text { font-size: 12.5px; color: var(--gray-700); line-height: 1.5; flex: 1; }
+.activity-text strong { color: var(--gray-900); font-weight: 500; }
+.activity-time { font-size: 11px; color: var(--gray-400); white-space: nowrap; margin-top: 1px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(2px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 440px;
+  transform: translateY(16px);
+  transition: transform 0.2s;
+}
+
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title { font-family: var(--font-head); font-size: 20px; color: var(--gray-900); }
+
+.modal-close {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  color: var(--gray-400);
+  transition: all 0.12s;
+}
+
+.modal-close:hover { background: var(--gray-100); color: var(--gray-700); }
+
+.modal-body { padding: 20px 24px; }
+
+.form-group { margin-bottom: 16px; }
+
+label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  color: var(--gray-900);
+  background: var(--gray-50);
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--teal);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(11,123,107,0.1);
+}
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.modal-footer { padding: 14px 24px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── FOOTER ── */
+footer {
+  background: #fff;
+  border-top: 1px solid var(--gray-200);
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.footer-left { font-size: 12px; color: var(--gray-400); }
+.footer-left strong { color: var(--teal-dk); font-weight: 600; }
+.footer-right { font-size: 12px; color: var(--gray-400); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .content-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  nav { padding: 0 16px; }
+  main { padding: 20px 16px; }
+  .nav-links { display: none; }
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.stats-grid .stat-card { animation: fadeIn 0.3s ease both; }
+.stat-card:nth-child(1) { animation-delay: 0.05s; }
+.stat-card:nth-child(2) { animation-delay: 0.10s; }
+.stat-card:nth-child(3) { animation-delay: 0.15s; }
+.stat-card:nth-child(4) { animation-delay: 0.20s; }
+.card, .side-panel > * { animation: fadeIn 0.35s ease both; animation-delay: 0.25s; }
+</style>
+</head>
+<body>
+
+<!-- ── FLASH MESSAGES ── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-container" id="flashContainer">
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">
+          <span>{{ message }}</span>
+          <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">
+    <div class="logo-icon"><div class="logo-cross"></div></div>
+    Storix
+  </div>
+  <ul class="nav-links">
+    <li><a href="#" class="active">Inventory</a></li>
+    <li><a href="#">Loans</a></li>
+    <li><a href="#">Students</a></li>
+    <li><a href="#">Reports</a></li>
+    <li><a href="#">Settings</a></li>
+  </ul>
+  <div class="nav-right">
+    {% if stats.overdue > 0 %}
+      <div class="nav-badge">⚠ {{ stats.overdue }} Overdue</div>
+    {% endif %}
+    <div class="nav-avatar" title="Admin">AD</div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main>
+
+  <!-- Page header -->
+  <div class="page-header">
+    <div class="page-title">
+      <h1>Inventory Dashboard</h1>
+      <p>College of Nursing Supply Management</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline" onclick="openModal('addItem')">
+        <span class="btn-icon">+</span> Add Item
+      </button>
+      <button class="btn btn-primary" onclick="openModal('loanOut')">
+        <span class="btn-icon">📤</span> Loan Out
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card teal">
+      <div class="stat-label">Total Items</div>
+      <div class="stat-value">{{ stats.total_items }}</div>
+      <div class="stat-sub"><strong>{{ stats.total_categories }}</strong> categories of supplies</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-label">Currently Borrowed</div>
+      <div class="stat-value">{{ stats.borrowed }}</div>
+      <div class="stat-sub">across <strong>{{ stats.active_loans }}</strong> active loans</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">Overdue Returns</div>
+      <div class="stat-value">{{ stats.overdue }}</div>
+      <div class="stat-sub"><strong>Past due date</strong> · action needed</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Available Now</div>
+      <div class="stat-value">{{ stats.available }}</div>
+      <div class="stat-sub"><strong>{{ stats.available_percent }}%</strong> of total inventory</div>
+    </div>
+  </div>
+
+  <!-- Content grid -->
+  <div class="content-grid">
+
+    <!-- Inventory table -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">All Supplies</span>
+        <div class="card-actions">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search supplies..." oninput="applyFilters()">
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="openModal('loanOut')">
+            <span class="btn-icon">📤</span> Loan Out
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-row">
+        <div class="filter-chip active-chip" onclick="setFilter('all', this)">All</div>
+        <div class="filter-chip" onclick="setFilter('available', this)">Available</div>
+        <div class="filter-chip" onclick="setFilter('low', this)">Low Stock</div>
+        <div class="filter-chip" onclick="setFilter('critical', this)">Critical</div>
+        <div class="filter-chip" onclick="setFilter('equipment', this)">Equipment</div>
+        <div class="filter-chip" onclick="setFilter('consumable', this)">Consumables</div>
+      </div>
+
+      <table id="inventoryTable">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Category</th>
+            <th>Stock</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          {% if items %}
+            {% for item in items %}
+            <tr data-status="{{ item.status | lower }}"
+                data-category="{{ item.category | lower }}"
+                data-name="{{ item.name | lower }}"
+                data-sku="{{ (item.sku or '') | lower }}">
+              <td>
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-code">{{ item.sku or '—' }}</span>
+              </td>
+              <td>
+                <span class="badge badge-teal">{{ item.category }}</span>
+              </td>
+              <td>
+                <div class="progress-wrap">
+                  <div class="progress-bar">
+                    <div class="progress-fill
+                      {% if item.stock_percent <= 25 %}fill-red
+                      {% elif item.stock_percent <= 50 %}fill-amber
+                      {% else %}fill-green{% endif %}"
+                      style="width:{{ item.stock_percent }}%">
+                    </div>
+                  </div>
+                  <span class="progress-num">{{ item.available_quantity }}/{{ item.total_quantity }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge
+                  {% if item.status == 'Critical' %}badge-red
+                  {% elif item.status == 'Low Stock' %}badge-amber
+                  {% else %}badge-green{% endif %}">
+                  {{ item.status }}
+                </span>
+              </td>
+              <td>
+                <div class="table-actions">
+                  <button class="icon-btn" title="Loan out" onclick="openModal('loanOut')">📤</button>
+                  <button class="icon-btn" title="Edit"
+                    onclick="openEditModal({{ item.id }}, {{ item.name|tojson }}, {{ (item.sku or '')|tojson }}, {{ item.category|tojson }}, {{ item.total_quantity }}, {{ item.low_alert }}, {{ (item.notes or '')|tojson }})">✏️</button>
+                  <form method="POST" action="/item/delete/{{ item.id }}" onsubmit="return confirm('Delete {{ item.name }}?')" style="display:inline">
+                    <button type="submit" class="icon-btn danger" title="Delete">🗑</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr id="emptyRow">
+              <td colspan="5" style="text-align:center;padding:32px;color:var(--gray-400);">
+                No inventory items yet. Click <strong>Add Item</strong> to get started.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+
+      <div style="padding:14px 20px;border-top:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;">
+        <span id="paginationInfo" style="font-size:12.5px;color:var(--gray-400);"></span>
+        <span style="font-size:12px;color:var(--gray-400);">{{ items | length }} total items</span>
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div class="side-panel">
+
+      <!-- Quick actions -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Quick Actions</span></div>
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="openModal('loanOut')">
+            <span class="qa-icon">📤</span>
+            <span class="qa-label">Loan Out Item</span>
+          </button>
+          <button class="qa-btn" onclick="openModal('returnItem')">
+            <span class="qa-icon">📥</span>
+            <span class="qa-label">Process Return</span>
+          </button>
+          <button class="qa-btn" onclick="openModal('addItem')">
+            <span class="qa-icon">➕</span>
+            <span class="qa-label">Add New Item</span>
+          </button>
+          <button class="qa-btn" onclick="window.print()">
+            <span class="qa-icon">📊</span>
+            <span class="qa-label">Print Report</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active loans -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Active Loans</span>
+          <span class="badge badge-gray">{{ active_loans_count }} active</span>
+        </div>
+
+        {% if active_loans %}
+          {% set avatar_classes = ['av-teal','av-amber','av-indigo','av-rose','av-violet'] %}
+          {% for loan in active_loans %}
+          <div class="loan-item">
+            <div class="loan-avatar {{ avatar_classes[loop.index0 % 5] }}">
+              {{ loan.initials }}
+            </div>
+            <div class="loan-info">
+              <div class="loan-name">{{ loan.student_name }}</div>
+              <div class="loan-detail">{{ loan.item_name }} × {{ loan.quantity }}</div>
+            </div>
+            <span class="loan-due {{ loan.due_class }}">{{ loan.due_label }}</span>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:20px 18px;text-align:center;color:var(--gray-400);font-size:13px;">
+            No active loans
+          </div>
+        {% endif %}
+
+        <div style="padding:12px 16px;border-top:1px solid var(--gray-100);">
+          <button class="btn btn-outline btn-sm" style="width:100%;" onclick="openModal('returnItem')">
+            Process a return →
+          </button>
+        </div>
+      </div>
+
+      <!-- Activity feed -->
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent Activity</span></div>
+
+        {% if activity %}
+          {% for act in activity %}
+          <div class="activity-item">
+            <div class="activity-dot dot-{{ act['color'] }}"></div>
+            <div class="activity-text">
+              <strong>{{ act['action'] }}</strong>
+              {% if act['detail'] %} — {{ act['detail'] }}{% endif %}
+            </div>
+            <div class="activity-time">
+              {{ act['created_at'][:16].replace('T',' ') if 'T' in act['created_at'] else act['created_at'][:16] }}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:20px 18px;text-align:center;color:var(--gray-400);font-size:13px;">
+            No recent activity
+          </div>
+        {% endif %}
+      </div>
+
+    </div><!-- /side-panel -->
+  </div><!-- /content-grid -->
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-left"><strong>Storix</strong> · College of Nursing Inventory Management</div>
+  <div class="footer-right">v1.0</div>
+</footer>
+
+
+<!-- ════════════ MODALS ════════════ -->
+
+<!-- ADD ITEM -->
+<div class="modal-overlay" id="modal-addItem">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Add New Item</div>
+      <button class="modal-close" onclick="closeModal('addItem')">×</button>
+    </div>
+    <form method="POST" action="/item/add">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Item Name *</label>
+          <input type="text" name="name" placeholder="e.g. Stethoscope (Adult)" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>SKU / Code</label>
+            <input type="text" name="sku" placeholder="SKU-XXX">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select name="category">
+              <option value="Equipment">Equipment</option>
+              <option value="Consumable">Consumable</option>
+              <option value="Textbook">Textbook</option>
+              <option value="Uniform">Uniform</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Total Quantity</label>
+            <input type="number" name="total_qty" placeholder="20" min="1" value="1">
+          </div>
+          <div class="form-group">
+            <label>Low Stock Alert At</label>
+            <input type="number" name="low_alert" placeholder="5" min="1" value="5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea name="notes" rows="2" placeholder="Condition notes or handling instructions..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('addItem')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Add Item</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EDIT ITEM -->
+<div class="modal-overlay" id="modal-editItem">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Edit Item</div>
+      <button class="modal-close" onclick="closeModal('editItem')">×</button>
+    </div>
+    <form method="POST" id="editForm" action="/item/edit/0">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Item Name *</label>
+          <input type="text" name="name" id="editName" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>SKU / Code</label>
+            <input type="text" name="sku" id="editSku">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select name="category" id="editCategory">
+              <option value="Equipment">Equipment</option>
+              <option value="Consumable">Consumable</option>
+              <option value="Textbook">Textbook</option>
+              <option value="Uniform">Uniform</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Total Quantity</label>
+            <input type="number" name="total_qty" id="editTotalQty" min="0">
+          </div>
+          <div class="form-group">
+            <label>Low Stock Alert At</label>
+            <input type="number" name="low_alert" id="editLowAlert" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea name="notes" id="editNotes" rows="2"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editItem')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- LOAN OUT -->
+<div class="modal-overlay" id="modal-loanOut">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Loan Out Supply</div>
+      <button class="modal-close" onclick="closeModal('loanOut')">×</button>
+    </div>
+    <form method="POST" action="/loan/out">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Student Name *</label>
+          <input type="text" name="student_name" placeholder="Full name" required>
+        </div>
+        <div class="form-group">
+          <label>Student ID</label>
+          <input type="text" name="student_id" placeholder="e.g. 2024-NS-001">
+        </div>
+        <div class="form-group">
+          <label>Item *</label>
+          <select name="item_id" required>
+            <option value="">— Select item —</option>
+            {% for item in loanable_items %}
+            <option value="{{ item['id'] }}">{{ item['name'] }} ({{ item['available'] }} available)</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" name="quantity" value="1" min="1">
+          </div>
+          <div class="form-group">
+            <label>Return By</label>
+            <input type="date" name="due_date" min="{{ today }}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Purpose / Notes</label>
+          <textarea name="purpose" rows="2" placeholder="e.g. Clinical rotation – RLE Lab 3"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('loanOut')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Confirm Loan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- RETURN ITEM -->
+<div class="modal-overlay" id="modal-returnItem">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Process Return</div>
+      <button class="modal-close" onclick="closeModal('returnItem')">×</button>
+    </div>
+    <form method="POST" action="/loan/return">
+      <div class="modal-body">
+        {% if active_loans %}
+          <div class="form-group">
+            <label>Select Active Loan *</label>
+            <select name="loan_id" required>
+              <option value="">— Select loan to return —</option>
+              {% for loan in active_loans %}
+              <option value="{{ loan.id }}">
+                {{ loan.student_name }} — {{ loan.item_name }} × {{ loan.quantity }}
+                {% if loan.due_date %}(due {{ loan.due_date }}){% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        {% else %}
+          <p style="color:var(--gray-400);font-size:13px;padding:8px 0;">No active loans to return.</p>
+          <input type="hidden" name="loan_id" value="0">
+        {% endif %}
+        <div class="form-group">
+          <label>Condition on Return</label>
+          <select name="condition">
+            <option>Good — no damage</option>
+            <option>Minor wear</option>
+            <option>Damaged — needs repair</option>
+            <option>Lost / Unreturnable</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea name="notes" rows="2" placeholder="Any observations on item condition..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal('returnItem')">Cancel</button>
+        <button type="submit" class="btn btn-primary" {% if not active_loans %}disabled{% endif %}>Confirm Return</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<!-- ── SCRIPT ── -->
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
